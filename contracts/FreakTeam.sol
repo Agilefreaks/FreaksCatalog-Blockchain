@@ -37,6 +37,7 @@ contract FreakTeam is ERC1155, AccessControl {
         _setRoleAdmin(FREAK_ROLE, HR_ROLE);
     }
 
+
     function addNewFreak(address _address, string memory _name,uint256 _startDate, uint256 _employeeNumber, Role _role, Skill _skill) external {
         require(hasRole(HR_ROLE, msg.sender), "Caller is not a hr");
         require(freaks[_address].employeeNumber == 0, "On the address exists already one freak");
@@ -47,7 +48,7 @@ contract FreakTeam is ERC1155, AccessControl {
         freaks[_address].choiceRole = _role;
         freaks[_address].choiceSkill = _skill;
         freakAccts.push(_address);   
-        _mint(_address, _employeeNumber, 1, "");   
+        _mint(_address, _employeeNumber, 1, "");
         emit addedFreak(_address, _name,_startDate, _employeeNumber,_role, _skill);
 
     }
@@ -56,6 +57,7 @@ contract FreakTeam is ERC1155, AccessControl {
     function getFreak(address freakAddress) public view returns(Freak memory freak) {
         return freaks[freakAddress];
     }
+
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {    // function created to avoid override
         return super.supportsInterface(interfaceId);
