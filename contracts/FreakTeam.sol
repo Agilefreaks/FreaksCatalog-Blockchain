@@ -40,7 +40,6 @@ contract FreakTeam is ERC1155, AccessControl {
 
     function addNewFreak(address _address, string memory _name,uint256 _startDate, uint256 _employeeNumber, Role _role, Skill _skill) external {
         require(hasRole(HR_ROLE, msg.sender), "Caller is not a hr");
-        require(freaks[_address].employeeNumber == 0, "On the address exists already one freak");
         grantRole(FREAK_ROLE, _address);
         freaks[_address].name = _name;
         freaks[_address].startDate = _startDate;
