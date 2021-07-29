@@ -19,14 +19,7 @@ struct Freak {
 }
 
 
-
-
-
 contract FreakTeam is ERC1155, AccessControl {
-
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {    // function created to avoid override
-        return super.supportsInterface(interfaceId);
-    }
 
     mapping(address => Freak)  public freaks;
     address[] public freakAccts;
@@ -35,27 +28,38 @@ contract FreakTeam is ERC1155, AccessControl {
     bytes32 public constant HR_ROLE = keccak256("HR_ROLE");
     bytes32 public constant FREAK_ROLE = keccak256("FREAK_ROLE");
 
-    event addedFreak(string _name, uint256 startDate, uint256 employeeNumber, Role role, Skill skill);
+    event addedFreak(address _address, string _name, uint256 startDate, uint256 employeeNumber, Role role, Skill skill);
 
-        constructor (address hr, address financial) ERC1155(""){
+    constructor (address hr, address financial) ERC1155(""){
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(HR_ROLE, hr);
         _setupRole(FINANCIAL_ROLE, financial);
+        _setRoleAdmin(FREAK_ROLE, HR_ROLE);
     }
-
 
     function addNewFreak(address _address, string memory _name,uint256 _startDate, uint256 _employeeNumber, Role _role, Skill _skill) external {
         require(hasRole(HR_ROLE, msg.sender), "Caller is not a hr");
+        require(freaks[_address].employeeNumber == 0, "On the address exists already one freak");
+        grantRole(FREAK_ROLE, _address);
         freaks[_address].name = _name;
         freaks[_address].startDate = _startDate;
         freaks[_address].employeeNumber = _employeeNumber;
         freaks[_address].choiceRole = _role;
         freaks[_address].choiceSkill = _skill;
-        freakAccts.push(_address);
-        // grantRole(FREAK_ROLE, _address);
-        // _mint(msg.sender, _employeeNumber, 1, "");
-        // emit addedFreak(_name,_startDate, _employeeNumber,_role, _skill);
- 
+        freakAccts.push(_address);   
+        _mint(_address, _employeeNumber, 1, "");   
+        emit addedFreak(_address, _name,_startDate, _employeeNumber,_role, _skill);
+
     }
+
+
+    function getFreak(address freakAddress) public view returns(Freak memory freak) {
+        return freaks[freakAddress];
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {    // function created to avoid override
+        return super.supportsInterface(interfaceId);
+    }   
+
 }
 
