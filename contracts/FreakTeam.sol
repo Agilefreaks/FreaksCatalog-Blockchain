@@ -27,11 +27,11 @@ contract FreakTeam is ERC1155, AccessControl {
 
     event addedFreak(address _address, string _name, uint256 startDate, uint256 employeeNumber, Role role, Skill skill);
     event deletedFreak(address _address, uint256 employeeNumber);
+    event promotedFreak(uint256 freakId, Skill oldSkillLevel, Skill newSkillLevel);
 
-    constructor (address hr, address financial) ERC1155(""){
+    constructor (address hr) ERC1155(""){
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(HR_ROLE, hr);
-        _setupRole(FINANCIAL_ROLE, financial);
         _setRoleAdmin(FREAK_ROLE, HR_ROLE);
     }
 
@@ -40,14 +40,12 @@ contract FreakTeam is ERC1155, AccessControl {
         require(freaks[_address].employeeNumber == 0, "On the address exists already one freak");
         grantRole(FREAK_ROLE, _address);
         freaks[_address] = Freak(
-            {
-                name: _name,
-                startDate: _startDate,
-                stopDate: 0,
-                employeeNumber: _employeeNumber,
-                role: _role,
-                skill: _skill
-            }
+                _name,
+                _startDate,
+                0,
+                _employeeNumber,
+                _role,
+                _skill
         );
         freakAccounts.push(_address);
         _mint(_address, _employeeNumber, 1, "");
@@ -61,6 +59,14 @@ contract FreakTeam is ERC1155, AccessControl {
         freaks[_address].stopDate = block.timestamp;
         _burn(_address, freaks[_address].employeeNumber, 1);
         emit deletedFreak(_address, freaks[_address].employeeNumber);
+   }
+
+   function promoteFreak(address _address, Skill newSkill) external {
+       require(hasRole(HR_ROLE, msg.sender), "Caller is not a hr");
+       require(_address != msg.sender, "Caller can not promote himself");
+       Skill oldSkill = freaks[_address].skill;
+       freaks[_address].skill = newSkill;
+       emit promotedFreak(freaks[_address].employeeNumber, oldSkill, newSkill);
    }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
