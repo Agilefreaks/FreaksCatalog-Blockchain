@@ -3,8 +3,6 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-
 
 enum Role{it, supportIt, intern}
 enum Skill{novice, advanced, competent, profiency, expert}
@@ -14,18 +12,16 @@ struct Freak {
         uint256 startDate;
         uint256 stopDate;
         uint256 employeeNumber;
-        Role choiceRole;
-        Skill choiceSkill;
+        Role role;
+        Skill skill;
 
 }
 
 contract FreakTeam is ERC1155, AccessControl {
 
-    mapping(uint256 => address) keys;
     mapping(address => Freak)  public freaks;
-    address[] public freakAccts;
-
-    bytes32 public constant FINANCIAL_ROLE = keccak256("FINANCIAL");
+    address[] public freakAccounts;
+    bytes32 public constant FINANCIAL_ROLE = keccak256("FINANCIAL_ROLE");
     bytes32 public constant HR_ROLE = keccak256("HR_ROLE");
     bytes32 public constant FREAK_ROLE = keccak256("FREAK_ROLE");
 
@@ -46,12 +42,11 @@ contract FreakTeam is ERC1155, AccessControl {
         freaks[_address].name = _name;
         freaks[_address].startDate = _startDate;
         freaks[_address].employeeNumber = _employeeNumber;
-        freaks[_address].choiceRole = _role;
-        freaks[_address].choiceSkill = _skill;
-        freakAccts.push(_address);
+        freaks[_address].role = _role;
+        freaks[_address].skill = _skill;
+        freakAccounts.push(_address);
         _mint(_address, _employeeNumber, 1, "");
         emit addedFreak(_address, _name,_startDate, _employeeNumber,_role, _skill);
-
     }
 
     function deleteFreak(address _address) external {
@@ -63,8 +58,7 @@ contract FreakTeam is ERC1155, AccessControl {
         emit deletedFreak(_address, freaks[_address].employeeNumber);
    }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {    // function created to avoid override
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
-
