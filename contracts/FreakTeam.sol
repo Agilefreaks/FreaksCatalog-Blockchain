@@ -14,7 +14,6 @@ struct Freak {
         uint256 employeeNumber;
         Role role;
         Skill skill;
-
 }
 
 contract FreakTeam is ERC1155, AccessControl {
