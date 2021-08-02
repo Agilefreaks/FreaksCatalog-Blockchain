@@ -32,21 +32,26 @@ contract FreakTeam is ERC1155, AccessControl {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(HR_ROLE, hr);
         _setupRole(FINANCIAL_ROLE, financial);
-        _setRoleAdmin(FREAK_ROLE, HR_ROLE); 
+        _setRoleAdmin(FREAK_ROLE, HR_ROLE);
     }
 
     function addNewFreak(address _address, string memory _name,uint256 _startDate, uint256 _employeeNumber, Role _role, Skill _skill) external {
         require(hasRole(HR_ROLE, msg.sender), "Caller is not a hr");
         require(freaks[_address].employeeNumber == 0, "On the address exists already one freak");
         grantRole(FREAK_ROLE, _address);
-        freaks[_address].name = _name;
-        freaks[_address].startDate = _startDate;
-        freaks[_address].employeeNumber = _employeeNumber;
-        freaks[_address].role = _role;
-        freaks[_address].skill = _skill;
+        freaks[_address] = Freak(
+            {
+                name: _name,
+                startDate: _startDate,
+                stopDate: 0,
+                employeeNumber: _employeeNumber,
+                role: _role,
+                skill: _skill
+            }
+        );
         freakAccounts.push(_address);
         _mint(_address, _employeeNumber, 1, "");
-        emit addedFreak(_address, _name,_startDate, _employeeNumber,_role, _skill);
+        emit addedFreak(_address, _name, _startDate, _employeeNumber, _role, _skill);
     }
 
     function deleteFreak(address _address) external {
