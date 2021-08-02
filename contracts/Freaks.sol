@@ -15,6 +15,7 @@ contract Freaks is ERC1155, AccessControl {
     enum Skill {Novice, Advanced, Competent, Proficient, Expert, Master}
     event addedFreak(string _name, Role rol, Skill skill, uint256 startDate, uint256 employeeNumber, address adresa);
     event removedFreak(address _address, uint256 employeeNumber);
+    event freakPromoted (uint256 employeeNumber, Skill oldSkill, Skill newSkill);
 
     struct Freak {
     string name;
@@ -56,6 +57,15 @@ contract Freaks is ERC1155, AccessControl {
         freakStruct[_adresa].stopDate = block.timestamp; 
         emit removedFreak(_adresa, freakStruct[_adresa].employeeNumber);
     }   
+
+    function promoteFreak(address _adresa, Skill _skill) external {
+        require(hasRole(HR_ROLE, msg.sender), "Caller is not HR");
+        require(bytes(freakStruct[_adresa].name).length != 0,"Sa existe Freak-ul pe care vrem sa-l modificam (sa aiba nume)");
+        require(_skill >  freakStruct[_adresa].skill,"Noul skill trebuie sa fie mai bun ca cel vechi");
+        Skill oldSkill = freakStruct[_adresa].skill;
+        freakStruct[_adresa].skill = _skill;
+        emit freakPromoted(freakStruct[_adresa].employeeNumber, oldSkill, _skill);
+    }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
