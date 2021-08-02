@@ -14,6 +14,7 @@ contract Freaks is ERC1155, AccessControl {
     enum Role {IT, Support}
     enum Skill {Novice, Advanced, Competent, Proficient, Expert, Master}
     event addedFreak(string _name, Role rol, Skill skill, uint256 startDate, uint256 employeeNumber, address adresa);
+    event removedFreak(address _address, uint256 employeeNumber);
 
     struct Freak {
     string name;
@@ -47,6 +48,14 @@ contract Freaks is ERC1155, AccessControl {
         emit addedFreak(_name, _rol, _skill, _startDate, _employeeNumber, _adresa);
         _mint(_adresa, _employeeNumber, 1, "");
     }
+
+    function removeFreak(address _adresa) external {   
+        require(hasRole(HR_ROLE, msg.sender), "Caller is not HR"); 
+        require(balanceOf(_adresa, freakStruct[_adresa].employeeNumber) > 0, "Adresa trebuie sa contina cel putin 1 token");
+        _burn(_adresa, freakStruct[_adresa].employeeNumber, 1);   
+        freakStruct[_adresa].stopDate = block.timestamp; 
+        emit removedFreak(_adresa, freakStruct[_adresa].employeeNumber);
+    }   
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
