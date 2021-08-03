@@ -39,11 +39,14 @@ contract Freaks is ERC1155, AccessControl {
         require(freakStruct[_adresa].employeeNumber == 0, "employeeNumber trebuie sa fie default, ca sa nu se poata adauga peste un alt Freak deja existent");
         grantRole(FREAK_ROLE, _adresa);
         freaks.push(_adresa);
-        freakStruct[_adresa].name = _name;
-        freakStruct[_adresa].rol= _rol; 
-        freakStruct[_adresa].skill =_skill;
-        freakStruct[_adresa].startDate = _startDate;
-        freakStruct[_adresa].employeeNumber = _employeeNumber;
+        freakStruct[_adresa] = Freak(
+            _name,
+            _rol,
+            _skill,
+            _startDate,
+            0,
+            _employeeNumber
+        );
         emit addedFreak(_name, _rol, _skill, _startDate, _employeeNumber, _adresa);
         _mint(_adresa, _employeeNumber, 1, "");
     }
