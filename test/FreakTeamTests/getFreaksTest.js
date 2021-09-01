@@ -1,7 +1,6 @@
 var chai = require("chai");
 const { expect, assert } = require("chai");
 const { BigNumber } = require("ethers");
-chai.use(require("chai-bignumber")(BigNumber));
 var web3 = require("web3");
 const toBN = web3.utils.toBN;
 

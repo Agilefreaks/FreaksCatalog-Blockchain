@@ -31,7 +31,7 @@ struct Freak {
     Role role;
     Skill skill;
     Norm norm;
-    uint16 score;
+    uint256 score;
 }
 
 /**
@@ -41,12 +41,13 @@ struct Freak {
 
 contract FreakTeam is ERC1155, AccessControl {
     mapping(address => Freak) public freaks;
-    uint16[] skillLevelRatios;
+    uint16[] roleRatioLevel = new uint16[](16);
+    uint16[] skillRatioLevel = new uint16[](16);
+    uint16[] normRatioLevel = new uint16[](16);
     address[] public freakAccounts;
     bytes32 public constant FINANCIAL_ROLE = keccak256("FINANCIAL_ROLE");
     bytes32 public constant HR_ROLE = keccak256("HR_ROLE");
-    bytes32 public constant FREAK_ROLE = keccak256("FREAK_ROLE");
-    uint16 totalScore;
+    uint256 totalScore;
 
     event addedFreak(
         address _address,
@@ -56,17 +57,17 @@ contract FreakTeam is ERC1155, AccessControl {
         Role role,
         Skill skill,
         Norm norm,
-        uint16 score
+        uint256 score
     );
     event deletedFreak(address _address, uint16 employeeNumber);
     event promotedFreak(uint16 employeeNumber, Skill oldSkillLevel, Skill newSkillLevel);
     event changedFreakNorm(uint16 employeeNumber, Norm oldNorm, Norm newNorm);
 
     constructor(address hr, address financial) ERC1155("") {
+        isInstance();
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(HR_ROLE, hr);
         _setupRole(FINANCIAL_ROLE, financial);
-        _setRoleAdmin(FREAK_ROLE, HR_ROLE);
     }
 
     modifier onlyHR() {
@@ -93,7 +94,6 @@ contract FreakTeam is ERC1155, AccessControl {
         Norm _norm
     ) external onlyHR {
         require(freaks[_address].employeeNumber == 0, "On the address exists already one freak");
-        grantRole(FREAK_ROLE, _address);
         freaks[_address] = Freak(
             _name,
             _startDate,
@@ -125,10 +125,7 @@ contract FreakTeam is ERC1155, AccessControl {
      */
     function deleteFreak(address _address) external onlyHR {
         require(_address != msg.sender, "Caller can not remove himself");
-        require(
-            balanceOf(_address, freaks[_address].employeeNumber) > 0,
-            "Address should contain at least 1 token"
-        );
+        require(balanceOf(_address, freaks[_address].employeeNumber) > 0, "Address should contain at least 1 token");
         freaks[_address].stopDate = block.timestamp;
         _burn(_address, freaks[_address].employeeNumber, 1);
         emit deletedFreak(_address, freaks[_address].employeeNumber);
@@ -159,12 +156,6 @@ contract FreakTeam is ERC1155, AccessControl {
     }
 
     /**
-        @notice Change the address of the wallet in which he receives the profit
-        @param _address Freak address
-        @param newWithdrawalAddress The address after change
-     */
-
-    /**
          @notice This functions returns all details about freaks
          @return _nume  returns an array with the name for each freak
          @return _rol  returns an array with the role for each freak
@@ -184,7 +175,7 @@ contract FreakTeam is ERC1155, AccessControl {
             Norm[] memory _norm,
             uint256[] memory _startDate,
             address[] memory _address,
-            uint16[] memory _score
+            uint256[] memory _score
         )
     {
         _nume = new string[](freakAccounts.length);
@@ -193,7 +184,7 @@ contract FreakTeam is ERC1155, AccessControl {
         _norm = new Norm[](freakAccounts.length);
         _startDate = new uint256[](freakAccounts.length);
         _address = new address[](freakAccounts.length);
-        _score = new uint16[](freakAccounts.length);
+        _score = new uint256[](freakAccounts.length);
         for (uint256 i = 0; i < freakAccounts.length; i++) {
             Freak storage freak = freaks[freakAccounts[i]];
             _nume[i] = freak.name;
@@ -207,56 +198,34 @@ contract FreakTeam is ERC1155, AccessControl {
         return (_nume, _rol, _skill, _norm, _startDate, _address, _score);
     }
 
+    /**
+        @notice This function verify if caller is a financial
+        @return it returns true if caller is finacial
+     */
     function isFinancial() external view returns (bool) {
         require(hasRole(FINANCIAL_ROLE, msg.sender), "Caller is not a financial");
         return true;
     }
 
     /**
-        @param _address  Freak wallet address
-        @return It returns freak procentage for one freak
-        @dev It returns freak procentage * 1000000 because solidity doesen't accept decimals 
+        @notice This function sets value for roles, skills and norms
      */
 
-    function getShare(address _address) external view onlyHR returns (uint256) {
-        return (freaks[_address].score * 1000000) / totalScore;
+    function isInstance() internal {
+        roleRatioLevel[uint16(Role.it)] = 100;
+        roleRatioLevel[uint16(Role.supportIt)] = 85;
+        skillRatioLevel[uint16(Skill.master)] = 100;
+        skillRatioLevel[uint16(Skill.expert)] = 90;
+        skillRatioLevel[uint16(Skill.proficient)] = 80;
+        skillRatioLevel[uint16(Skill.competent)] = 75;
+        skillRatioLevel[uint16(Skill.advanced)] = 70;
+        skillRatioLevel[uint16(Skill.novice)] = 50;
+        normRatioLevel[uint16(Norm.fullTime)] = 100;
+        normRatioLevel[uint16(Norm.partTime)] = 60;
     }
 
     /**
-        @param _role Freak role
-        @return It returns profit procentage for freak role
-        @dev It returns profit procentage * 100 because solidity doesn't accept decimals
-     */
-    function getRole(Role _role) internal pure returns (uint16) {
-        if (Role.it == _role) return 100;
-        if (Role.supportIt == _role) return 85;
-    }
-
-    /**
-        @param _skill Freak skill
-        @return It returns profit procentage for freak skill
-        @dev It returns profit procentage * 100 because solidity doesn't accept decimals
-     */
-    function getSkill(Skill _skill) internal pure returns (uint16) {
-        if (Skill.master == _skill) return 100;
-        if (Skill.expert == _skill) return 90;
-        if (Skill.proficient == _skill) return 80;
-        if (Skill.competent == _skill) return 75;
-        if (Skill.advanced == _skill) return 70;
-        if (Skill.novice == _skill) return 50;
-    }
-
-    /**
-        @param _norm Freak norm
-        @return It returns profit procentage for freak norm
-        @dev It returns profit procentage * 100 because solidity doesn't accept decimals
-     */
-    function getNorm(Norm _norm) internal pure returns (uint16) {
-        if (Norm.fullTime == _norm) return 100;
-        if (Norm.partTime == _norm) return 60;
-    }
-
-    /**
+        @notice Get the employee number
         @param _employeeNumber Freak employee number
         @return It returns profit procentage  for employee number
         @dev It returns profit procentage * 100 because solidity doesn't accept decimals
@@ -276,22 +245,16 @@ contract FreakTeam is ERC1155, AccessControl {
         Skill _skill,
         Norm _norm,
         uint16 _employeeNumber
-    ) internal returns (uint16) {
-        uint16 scoreReturn = ((getRole(_role) +
-            getSkill(_skill) +
-            getNorm(_norm) +
+    ) internal returns (uint256) {
+        uint16 scoreReturn = ((roleRatioLevel[uint16(_role)] +
+            skillRatioLevel[uint16(_skill)] +
+            normRatioLevel[uint16(_norm)] +
             getRisk(_employeeNumber)) / 4);
         totalScore += scoreReturn;
         return scoreReturn;
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC1155, AccessControl)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
