@@ -1,49 +1,98 @@
 const { expect, assert } = require("chai");
 
-describe("Set amount -- Tests", function () {
+describe("Profit Allocation -- Tests", function () {
   beforeEach(async () => {
     profitSharingContractFactory = await ethers.getContractFactory(
       "ProfitSharing"
     );
     usdcContractFactory = await ethers.getContractFactory("USDC");
     [admin, hr, other, financial, contract] = await ethers.getSigners();
-    usdcContract = await usdcContractFactory.deploy("USDC TOKEN", "USDC", financial.address);
-    profit = await profitSharingContractFactory.deploy(
+    usdcContract = await usdcContractFactory.deploy(
+      "USDC TOKEN",
+      "USDC",
+      financial.address
+    );
+    profitSharing = await profitSharingContractFactory.deploy(
       hr.address,
       financial.address,
       usdcContract.address
     );
-    await profit
+    await profitSharing
       .connect(hr)
       .addNewFreak(other.address, "TestFreak", 1598846849, 1, 1, 1, 0);
-    await profit
+    await profitSharing
       .connect(hr)
       .addNewFreak(hr.address, "TestFreak1", 1598846849, 2, 1, 1, 0);
-    await profit
+    await profitSharing
       .connect(hr)
       .addNewFreak(admin.address, "TestFreak2", 1598846849, 3, 1, 1, 1);
-    await profit
+    await profitSharing
       .connect(hr)
       .addNewFreak(financial.address, "TestFreak3", 1598846849, 3, 1, 1, 1);
+
+    profitSharingContractFromFinancial = await profitSharing.connect(financial);
+    usdcContractFromFinancial = await usdcContract.connect(financial);
+    await usdcContractFromFinancial.approve(
+      profitSharingContractFromFinancial.address,
+      100000
+    );
+    await profitSharingContractFromFinancial.setAmount(
+      profitSharing.address,
+      100000,
+      1609391249,
+      1617163649
+    );
   });
 
-  it.only("Set amount fails when it's not called by financial", async function () {
+  it("Set amount fails when it's not called by financial", async function () {
     await expect(
-      profit.connect(other).setAmount(profit.address, 100000)
+      profitSharing
+        .connect(other)
+        .setAmount(profitSharing.address, 100000, 1609391249, 1617163649)
     ).to.be.revertedWith("Caller is not a financial");
   });
-  it.only("Set amount failes when the balance of the contract does not change", async function () {
-    // console.log(financial.address);
-    // console.log(await usdcContract.balanceOf(financial.address));
-    // console.log(usdcContract.address);
-    // console.log(profit.address);
-    (await profit.connect(financial).setAmount(profit.address, 3));
-      //  console.log(await profit.setAmount(profit.address, 3));
-    // console.log(await profit.connect(financial).balanceOf(financial.address));
-
-    // expect(profit freak.connect(financial).setAmount(financial.address, other.address, 100)).to.equal(1);
-    // expect(profit freak.balanceOf(contract.address)).to.equal(
-    //     100000
-    //   );
+  it("Set amount failes when the balance of the contract does not change", async function () {
+    expect(
+      await usdcContractFromFinancial.balanceOf(profitSharing.address)
+    ).to.equal(100000);
+  });
+  it("Profit allocation fails when it does not allow profit correctly", async function () {
+    expect(
+      await usdcContractFromFinancial.allowance(
+        profitSharing.address,
+        other.address
+      )
+    ).to.equal(26412);
+    expect(
+      await usdcContractFromFinancial.allowance(
+        profitSharing.address,
+        hr.address
+      )
+    ).to.equal(26412);
+    expect(
+      await usdcContract.allowance(profitSharing.address, admin.address)
+    ).to.equal(23572);
+    expect(
+      await usdcContractFromFinancial.allowance(
+        profitSharing.address,
+        financial.address
+      )
+    ).to.equal(23572);
+  });
+  it("Set amount failes when it doesn't emit corect events", async function () {
+    await usdcContractFromFinancial.approve(
+      profitSharingContractFromFinancial.address,
+      100000
+    );
+    await expect(
+      profitSharingContractFromFinancial.setAmount(
+        profitSharing.address,
+        100000,
+        1609391249,
+        1617163649
+      )
+    )
+      .to.emit(profitSharing, "allocatedProfit")
+      .withArgs(100000, 1609391249, 1617163649);
   });
 });

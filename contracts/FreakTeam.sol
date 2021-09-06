@@ -47,7 +47,7 @@ contract FreakTeam is ERC1155, AccessControl {
     address[] public freakAccounts;
     bytes32 public constant FINANCIAL_ROLE = keccak256("FINANCIAL_ROLE");
     bytes32 public constant HR_ROLE = keccak256("HR_ROLE");
-    uint256 totalScore;
+    uint256 totalScore = 0;
 
     event addedFreak(
         address _address,
@@ -104,7 +104,7 @@ contract FreakTeam is ERC1155, AccessControl {
             _norm,
             freakScore(_role, _skill, _norm, _employeeNumber)
         );
-
+        totalScore += freakScore(_role, _skill, _norm, _employeeNumber);
         freakAccounts.push(_address);
         _mint(_address, _employeeNumber, 1, "");
         emit addedFreak(
@@ -125,7 +125,10 @@ contract FreakTeam is ERC1155, AccessControl {
      */
     function deleteFreak(address _address) external onlyHR {
         require(_address != msg.sender, "Caller can not remove himself");
-        require(balanceOf(_address, freaks[_address].employeeNumber) > 0, "Address should contain at least 1 token");
+        require(
+            balanceOf(_address, freaks[_address].employeeNumber) > 0,
+            "Address should contain at least 1 token"
+        );
         freaks[_address].stopDate = block.timestamp;
         _burn(_address, freaks[_address].employeeNumber, 1);
         emit deletedFreak(_address, freaks[_address].employeeNumber);
@@ -246,15 +249,20 @@ contract FreakTeam is ERC1155, AccessControl {
         Norm _norm,
         uint16 _employeeNumber
     ) internal returns (uint256) {
-        uint16 scoreReturn = ((roleRatioLevel[uint16(_role)] +
+        uint256 scoreReturn = ((roleRatioLevel[uint16(_role)] +
             skillRatioLevel[uint16(_skill)] +
             normRatioLevel[uint16(_norm)] +
             getRisk(_employeeNumber)) / 4);
-        totalScore += scoreReturn;
         return scoreReturn;
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC1155, AccessControl)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 }
