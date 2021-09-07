@@ -125,10 +125,7 @@ contract FreakTeam is ERC1155, AccessControl {
      */
     function deleteFreak(address _address) external onlyHR {
         require(_address != msg.sender, "Caller can not remove himself");
-        require(
-            balanceOf(_address, freaks[_address].employeeNumber) > 0,
-            "Address should contain at least 1 token"
-        );
+        require(balanceOf(_address, freaks[_address].employeeNumber) > 0, "Address should contain at least 1 token");
         freaks[_address].stopDate = block.timestamp;
         _burn(_address, freaks[_address].employeeNumber, 1);
         emit deletedFreak(_address, freaks[_address].employeeNumber);
@@ -188,15 +185,15 @@ contract FreakTeam is ERC1155, AccessControl {
         _startDate = new uint256[](freakAccounts.length);
         _address = new address[](freakAccounts.length);
         _score = new uint256[](freakAccounts.length);
-        for (uint256 i = 0; i < freakAccounts.length; i++) {
-            Freak storage freak = freaks[freakAccounts[i]];
-            _nume[i] = freak.name;
-            _rol[i] = freak.role;
-            _norm[i] = freak.norm;
-            _skill[i] = freak.skill;
-            _startDate[i] = freak.startDate;
-            _address[i] = freakAccounts[i];
-            _score[i] = freak.score;
+        for (uint256 eachFreak = 0; eachFreak < freakAccounts.length; eachFreak++) {
+            Freak storage freak = freaks[freakAccounts[eachFreak]];
+            _nume[eachFreak] = freak.name;
+            _rol[eachFreak] = freak.role;
+            _norm[eachFreak] = freak.norm;
+            _skill[eachFreak] = freak.skill;
+            _startDate[eachFreak] = freak.startDate;
+            _address[eachFreak] = freakAccounts[eachFreak];
+            _score[eachFreak] = freak.score;
         }
         return (_nume, _rol, _skill, _norm, _startDate, _address, _score);
     }
@@ -256,13 +253,7 @@ contract FreakTeam is ERC1155, AccessControl {
         return scoreReturn;
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC1155, AccessControl)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

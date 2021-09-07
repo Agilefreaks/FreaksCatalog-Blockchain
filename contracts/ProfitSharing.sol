@@ -11,9 +11,11 @@ import "./FreakTeam.sol";
 contract ProfitSharing is FreakTeam {
     USDC usdcContract;
     uint256 profitAllocated;
+    address financial;
 
     event allocatedProfit(uint256 amount, uint256 startQuarterDate, uint256 endQuarterDate);
     event withdrewProfit(string name, address toAddress, uint256 amount);
+
     modifier onlyFINANCIAL() {
         require(hasRole(FINANCIAL_ROLE, msg.sender), "Caller is not a financial");
         _;
@@ -26,40 +28,46 @@ contract ProfitSharing is FreakTeam {
     ) FreakTeam(_hr, _financial) {
         usdcContract = _usdcContract;
         _setupRole(FINANCIAL_ROLE, _financial);
+        financial = _financial;
         _setupRole(FINANCIAL_ROLE, msg.sender);
     }
 
+    /**
+        @notice Tranfers amount from financial to contract and assigns it to all freaks 
+        @param amount - amount transmitted by financial
+        @param startOfQuarter - The beginning of the period in which the profit is distributed
+        @param endOfQuarter - End of the period in which the profit is distributed
+     */
     function setAmount(
-        address _contractAddress,
         uint256 amount,
         uint256 startOfQuarter,
         uint256 endOfQuarter
     ) external onlyFINANCIAL {
-        usdcContract.increaseAllowance(_contractAddress, amount);
-        usdcContract.transferFrom(msg.sender, _contractAddress, amount);
+        require(usdcContract.balanceOf(msg.sender) >= amount, "You don't have this sum for transfer");
+        usdcContract.transferFrom(msg.sender, address(this), amount);
         allocate(amount, startOfQuarter, endOfQuarter);
         emit allocatedProfit(amount, startOfQuarter, endOfQuarter);
     }
 
-    function withdrawProfit(
-        address _contractAddress,
-        address _address,
-        address _newWalletAddress,
-        uint256 amount
-    ) external {
-        require(msg.sender == _address, "Caller is not a freak");
-        require(
-            usdcContract.allowance(msg.sender, _address) >= amount,
-            "You don't have such a large amount allocated"
-        );
-        if (_newWalletAddress == address(0)) _newWalletAddress = _address;
-        else usdcContract.allowance(_address, _newWalletAddress);
-        usdcContract.transferFrom(_contractAddress, _newWalletAddress, amount);
-        emit withdrewProfit(freaks[_address].name, _newWalletAddress, amount);
+    /**
+        @notice - It transfers the money from the smartContract to the address where the freak wants to withdraw the money
+        @notice - The amount the freak wants to withdraw
+     */
+    function withdrawProfit(address _newWalletAddress, uint256 amount) external {
+        require(usdcContract.allowance(address(this), msg.sender) >= amount, "You don't have such a large amount allocated");
+        if (_newWalletAddress == msg.sender) {
+            _newWalletAddress = msg.sender;
+        }
+        usdcContract.transfer(_newWalletAddress, amount);
+        usdcContract.decreaseAllowance(msg.sender, amount);
+        emit withdrewProfit(freaks[msg.sender].name, _newWalletAddress, amount);
     }
 
-    function Allocation(address _address) external view onlyFINANCIAL returns (string memory, uint256) {
-        return (freaks[_address].name, usdcContract.allowance(msg.sender, _address));
+    /**
+        @notice It shows the maximum amount the freak can withdraw
+     */
+    function Allocation() external view returns (uint256) {
+        return (usdcContract.allowance(address(this), msg.sender));
     }
 
     /**
@@ -79,15 +87,18 @@ contract ProfitSharing is FreakTeam {
         return ((endOfQuarter - startDate) / (endOfQuarter - startOfQuarter));
     }
 
+    /**
+        @notice - Allocate the profit to each freak
+     */
     function allocate(
         uint256 amount,
         uint256 startOfQuarter,
         uint256 endOfQuarter
     ) internal onlyFINANCIAL {
         for (uint256 eachFreak = 0; eachFreak < freakAccounts.length; eachFreak++) {
-            address i = freakAccounts[eachFreak];
-            profitAllocated = (freaks[i].score * getShare(amount));
-            usdcContract.increaseAllowance(i, profitAllocated);
+            address freakAddress = freakAccounts[eachFreak];
+            profitAllocated = (freaks[freakAddress].score * getShare(amount));
+            usdcContract.increaseAllowance(freakAddress, profitAllocated);
         }
     }
 }

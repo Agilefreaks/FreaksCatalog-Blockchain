@@ -17,27 +17,53 @@ describe("Profit Allocation -- Tests", function () {
       financial.address,
       usdcContract.address
     );
-    await profitSharing
-      .connect(hr)
-      .addNewFreak(other.address, "TestFreak", 1598846849, 1, 1, 1, 0);
-    await profitSharing
-      .connect(hr)
-      .addNewFreak(hr.address, "TestFreak1", 1598846849, 2, 1, 1, 0);
-    await profitSharing
-      .connect(hr)
-      .addNewFreak(admin.address, "TestFreak2", 1598846849, 3, 1, 1, 1);
-    await profitSharing
-      .connect(hr)
-      .addNewFreak(financial.address, "TestFreak3", 1598846849, 3, 1, 1, 1);
-
-    profitSharingContractFromFinancial = await profitSharing.connect(financial);
+    profitSharingContractFromHr = await profitSharing.connect(hr);
     usdcContractFromFinancial = await usdcContract.connect(financial);
+    profitSharingContractFromFinancial = await profitSharing.connect(financial);
+
+    await profitSharingContractFromHr.addNewFreak(
+      other.address,
+      "TestFreak",
+      1598846849,
+      1,
+      1,
+      1,
+      0
+    );
+    await profitSharingContractFromHr.addNewFreak(
+      hr.address,
+      "TestFreak1",
+      1598846849,
+      2,
+      1,
+      1,
+      0
+    );
+    await profitSharingContractFromHr.addNewFreak(
+      admin.address,
+      "TestFreak2",
+      1598846849,
+      3,
+      1,
+      1,
+      1
+    );
+    await profitSharingContractFromHr.addNewFreak(
+      financial.address,
+      "TestFreak3",
+      1598846849,
+      3,
+      1,
+      1,
+      1
+    );
+
     await usdcContractFromFinancial.approve(
-      profitSharingContractFromFinancial.address,
+      profitSharing.address,
       100000
     );
+
     await profitSharingContractFromFinancial.setAmount(
-      profitSharing.address,
       100000,
       1609391249,
       1617163649
@@ -46,9 +72,7 @@ describe("Profit Allocation -- Tests", function () {
 
   it("Set amount fails when it's not called by financial", async function () {
     await expect(
-      profitSharing
-        .connect(other)
-        .setAmount(profitSharing.address, 100000, 1609391249, 1617163649)
+      profitSharingContractFromHr.setAmount(100000, 1609391249, 1617163649)
     ).to.be.revertedWith("Caller is not a financial");
   });
   it("Set amount failes when the balance of the contract does not change", async function () {
@@ -86,7 +110,6 @@ describe("Profit Allocation -- Tests", function () {
     );
     await expect(
       profitSharingContractFromFinancial.setAmount(
-        profitSharing.address,
         100000,
         1609391249,
         1617163649
