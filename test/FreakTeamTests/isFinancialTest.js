@@ -14,11 +14,9 @@ describe("Is Financial -- Tests", function () {
   });
 
   it("Is financial fails when it's not called by financial", async function () {
-    await expect(FreakTeam.connect(other).isFinancial()).to.be.revertedWith(
-      "Caller is not a financial"
-    );
+    expect(await FreakTeam.connect(other).isFinancial(other.address)).to.equal(false);
   });
-  it("AddFreak fails when skill is not added", async function () {
-    expect(await FreakTeam.connect(financial).isFinancial()).to.equal(true);
+  it("Is financial works when it is called by a financial", async function () {
+    expect(await FreakTeam.connect(financial).isFinancial(financial.address)).to.equal(true);
   });
 });

@@ -47,7 +47,7 @@ contract FreakTeam is ERC1155, AccessControl {
     address[] public freakAccounts;
     bytes32 public constant FINANCIAL_ROLE = keccak256("FINANCIAL_ROLE");
     bytes32 public constant HR_ROLE = keccak256("HR_ROLE");
-    uint256 totalScore = 0;
+    uint256 public totalScore = 0;
 
     event addedFreak(
         address _address,
@@ -64,7 +64,7 @@ contract FreakTeam is ERC1155, AccessControl {
     event changedFreakNorm(uint16 employeeNumber, Norm oldNorm, Norm newNorm);
 
     constructor(address hr, address financial) ERC1155("") {
-        isInstance();
+        setFreakDetails();
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(HR_ROLE, hr);
         _setupRole(FINANCIAL_ROLE, financial);
@@ -202,16 +202,23 @@ contract FreakTeam is ERC1155, AccessControl {
         @notice This function verify if caller is a financial
         @return it returns true if caller is finacial
      */
-    function isFinancial() external view returns (bool) {
-        require(hasRole(FINANCIAL_ROLE, msg.sender), "Caller is not a financial");
-        return true;
+    function isFinancial(address _address) public view returns (bool) {
+        return hasRole(FINANCIAL_ROLE, _address);
+    }
+
+    function getFreakCount() public view returns (uint256) {
+        return freakAccounts.length;
+    }
+
+    function getFreak(address _address) public view returns(Freak memory freak) {
+        return freaks[_address];
     }
 
     /**
         @notice This function sets value for roles, skills and norms
      */
 
-    function isInstance() internal {
+    function setFreakDetails() internal {
         roleRatioLevel[uint16(Role.it)] = 100;
         roleRatioLevel[uint16(Role.supportIt)] = 85;
         skillRatioLevel[uint16(Skill.master)] = 100;
@@ -227,13 +234,14 @@ contract FreakTeam is ERC1155, AccessControl {
     /**
         @notice Get the employee number
         @param _employeeNumber Freak employee number
-        @return It returns profit procentage  for employee number
+        @return riskRatio It returns profit procentage  for employee number
         @dev It returns profit procentage * 100 because solidity doesn't accept decimals
      */
-    function getRisk(uint16 _employeeNumber) internal pure returns (uint16) {
-        if (_employeeNumber >= 0 && _employeeNumber <= 5) return 100;
-        if (_employeeNumber > 5 && _employeeNumber <= 25) return 90;
-        if (_employeeNumber > 25) return 80;
+    function getRisk(uint16 _employeeNumber) internal pure returns (uint16 riskRatio) {
+        if (_employeeNumber >= 0 && _employeeNumber <= 5) riskRatio = 100;
+        else if (_employeeNumber > 5 && _employeeNumber <= 25) riskRatio = 90;
+        else if (_employeeNumber > 25) riskRatio = 80;
+        return riskRatio;
     }
 
     /**
@@ -245,7 +253,7 @@ contract FreakTeam is ERC1155, AccessControl {
         Skill _skill,
         Norm _norm,
         uint16 _employeeNumber
-    ) internal returns (uint256) {
+    ) internal view returns (uint256) {
         uint256 scoreReturn = ((roleRatioLevel[uint16(_role)] +
             skillRatioLevel[uint16(_skill)] +
             normRatioLevel[uint16(_norm)] +

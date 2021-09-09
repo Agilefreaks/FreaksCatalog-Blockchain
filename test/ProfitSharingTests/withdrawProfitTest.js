@@ -3,7 +3,12 @@ const { BigNumber } = require("ethers");
 
 describe("Withdraw Profit -- Tests", function () {
   beforeEach(async () => {
-    [admin, hr, other, financial, freak] = await ethers.getSigners();
+    [admin, hr, other, financial, contract, freak] = await ethers.getSigners();
+    freakTeamContractFactory = await ethers.getContractFactory("FreakTeam");
+    freakTeam = await freakTeamContractFactory.deploy(
+      hr.address,
+      financial.address
+    );
     profitSharingContractFactory = await ethers.getContractFactory(
       "ProfitSharing"
     );
@@ -14,18 +19,16 @@ describe("Withdraw Profit -- Tests", function () {
       financial.address
     );
     profitSharing = await profitSharingContractFactory.deploy(
-      hr.address,
-      financial.address,
-      usdcContract.address
+      usdcContract.address,
+      freakTeam.address
     );
-    // creat o functie noua async cu deploy-uri
-    profitSharingContractFromFinancial = await profitSharing.connect(financial);
     profitSharingContractFromHr = await profitSharing.connect(hr);
-    profitSharingContractFromFreak = await profitSharing.connect(freak);
     usdcContractFromFinancial = await usdcContract.connect(financial);
-    usdcContractFromFreak = await usdcContract.connect(freak);
-
-    await profitSharingContractFromHr.addNewFreak(
+    profitSharingContractFromFinancial = await profitSharing.connect(financial);
+    profitSharingContractFromFreak = await profitSharing.connect(freak);
+    freakTeamFromHr = await freakTeam.connect(hr);
+   //TODO: creat 2 variable startOfQuarter si endOfQuarter
+    await freakTeamFromHr.addNewFreak(
       freak.address,
       "TestFreak",
       1598846849,
@@ -34,7 +37,7 @@ describe("Withdraw Profit -- Tests", function () {
       1,
       0
     );
-    await profitSharingContractFromHr.addNewFreak(
+    await freakTeamFromHr.addNewFreak(
       hr.address,
       "TestFreak1",
       1598846849,
@@ -43,7 +46,7 @@ describe("Withdraw Profit -- Tests", function () {
       1,
       0
     );
-    await profitSharingContractFromHr.addNewFreak(
+    await freakTeamFromHr.addNewFreak(
       admin.address,
       "TestFreak2",
       1598846849,
@@ -52,7 +55,7 @@ describe("Withdraw Profit -- Tests", function () {
       1,
       1
     );
-    await profitSharingContractFromHr.addNewFreak(
+    await freakTeamFromHr.addNewFreak(
       financial.address,
       "TestFreak3",
       1598846849,
@@ -62,7 +65,7 @@ describe("Withdraw Profit -- Tests", function () {
       1
     );
     await usdcContractFromFinancial.approve(profitSharing.address, 100000);
-    await profitSharingContractFromFinancial.setAmount(
+    await profitSharingContractFromFinancial.allocate(
       100000,
       1609391249,
       1617163649
@@ -74,7 +77,7 @@ describe("Withdraw Profit -- Tests", function () {
       profitSharingContractFromFreak.withdrawProfit(freak.address, 100000)
     ).to.be.revertedWith("You don't have such a large amount allocated");
   });
-  it("Withdraw profit fails when freak doesn't transfer amount corectly", async function () {
+  it("Withdraw profit works when freak  transfers amount corectly", async function () {
     await profitSharingContractFromFreak.withdrawProfit(freak.address, 9000);
     expect(BigNumber.from(9000)).to.eql(
       await usdcContract.balanceOf(freak.address)

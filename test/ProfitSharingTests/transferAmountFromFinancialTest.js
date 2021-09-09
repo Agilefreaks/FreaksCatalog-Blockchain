@@ -2,26 +2,31 @@ const { expect, assert } = require("chai");
 
 describe("Profit Allocation -- Tests", function () {
   beforeEach(async () => {
+    [admin, hr, other, financial, contract] = await ethers.getSigners();
+    freakTeamContractFactory = await ethers.getContractFactory("FreakTeam");
+    freakTeam = await freakTeamContractFactory.deploy(
+      hr.address,
+      financial.address
+    );
     profitSharingContractFactory = await ethers.getContractFactory(
       "ProfitSharing"
     );
     usdcContractFactory = await ethers.getContractFactory("USDC");
-    [admin, hr, other, financial, contract] = await ethers.getSigners();
     usdcContract = await usdcContractFactory.deploy(
       "USDC TOKEN",
       "USDC",
       financial.address
     );
     profitSharing = await profitSharingContractFactory.deploy(
-      hr.address,
-      financial.address,
-      usdcContract.address
+      usdcContract.address,
+      freakTeam.address
     );
     profitSharingContractFromHr = await profitSharing.connect(hr);
     usdcContractFromFinancial = await usdcContract.connect(financial);
     profitSharingContractFromFinancial = await profitSharing.connect(financial);
+    freakTeamFromHr = await freakTeam.connect(hr);
 
-    await profitSharingContractFromHr.addNewFreak(
+    await freakTeamFromHr.addNewFreak(
       other.address,
       "TestFreak",
       1598846849,
@@ -30,7 +35,7 @@ describe("Profit Allocation -- Tests", function () {
       1,
       0
     );
-    await profitSharingContractFromHr.addNewFreak(
+    await freakTeamFromHr.addNewFreak(
       hr.address,
       "TestFreak1",
       1598846849,
@@ -39,7 +44,7 @@ describe("Profit Allocation -- Tests", function () {
       1,
       0
     );
-    await profitSharingContractFromHr.addNewFreak(
+    await freakTeamFromHr.addNewFreak(
       admin.address,
       "TestFreak2",
       1598846849,
@@ -48,7 +53,7 @@ describe("Profit Allocation -- Tests", function () {
       1,
       1
     );
-    await profitSharingContractFromHr.addNewFreak(
+    await freakTeamFromHr.addNewFreak(
       financial.address,
       "TestFreak3",
       1598846849,
@@ -58,12 +63,9 @@ describe("Profit Allocation -- Tests", function () {
       1
     );
 
-    await usdcContractFromFinancial.approve(
-      profitSharing.address,
-      100000
-    );
+    await usdcContractFromFinancial.approve(profitSharing.address, 100000);
 
-    await profitSharingContractFromFinancial.setAmount(
+    await profitSharingContractFromFinancial.allocate(
       100000,
       1609391249,
       1617163649
@@ -72,7 +74,7 @@ describe("Profit Allocation -- Tests", function () {
 
   it("Set amount fails when it's not called by financial", async function () {
     await expect(
-      profitSharingContractFromHr.setAmount(100000, 1609391249, 1617163649)
+      profitSharingContractFromHr.allocate(100000, 1609391249, 1617163649)
     ).to.be.revertedWith("Caller is not a financial");
   });
   it("Set amount failes when the balance of the contract does not change", async function () {
@@ -109,7 +111,7 @@ describe("Profit Allocation -- Tests", function () {
       100000
     );
     await expect(
-      profitSharingContractFromFinancial.setAmount(
+      profitSharingContractFromFinancial.allocate(
         100000,
         1609391249,
         1617163649

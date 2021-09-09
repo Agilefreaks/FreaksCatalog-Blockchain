@@ -7,7 +7,7 @@ contract USDC is ERC20 {
         string memory _name,
         string memory _symbol,
         address _financial
-    ) public ERC20(_name, _symbol) {
+    ) ERC20(_name, _symbol) {
         _mint(_financial, 10000000000000000000000000000);
     }
 }
